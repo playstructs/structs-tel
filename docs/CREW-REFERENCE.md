@@ -104,7 +104,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://auth.crew.oh.energy/
 | 2026-08-28 Caddy | `systemctl reload caddy` fails: `localhost:2019 connection refused` | Global block has `admin off`; use `systemctl restart caddy` after Caddyfile edits |
 | 2026-08-28 Caddy | DNS ready for matrix/auth | LE certs issued; HTTPS probes OK |
 | 2026-08-28 Element | `/oauth/authorize` → 500 | `config/oidc/private.key` was `root:600` after `app:oidc:generate-key`; `chown www-data` + `chmod 640`. Authorize now 302 → `/?oidc=<id>` (wallet login resume) |
-| 2026-08-28 Element | MAS callback `invalid claim "exp"` | `lcobucci/jwt` emitted fractional `iat`/`exp`; MAS requires integer NumericDate. Patched `IdTokenResponse.php` to `setTimestamp(...)` (see `scripts/crew-fix-id-token-numericdate.py`) |
+| 2026-08-28 federation | Join remote room on `matrix.crab.la` → `Invalid signature … ed25519:a_KAru` | Not our signing key. Remote reverse proxy **decodes** `%21`/`%40`/`%3A` before Synapse verifies auth. Crew Caddy preserves encoding (verified). Remote admin must fix proxy (`nocanon` / nginx `proxy_pass` without URI path). See TROUBLESHOOTING.md |
 
 ## Final working shape
 
@@ -117,4 +117,5 @@ Public probes: matrix versions 200, auth discovery 200, well-known OK
 Element login: pending manual smoke test
 Matrix MXID example: pending
 Notes: structs-pg TLS cert must stay X.509 v3 for MAS; Caddy admin off → restart not reload
+Public room: #orbital-hydro:matrix.crew.oh.energy (Orbital Hydro), created by @guild-bot:matrix.crew.oh.energy
 ```

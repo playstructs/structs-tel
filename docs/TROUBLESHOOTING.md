@@ -45,9 +45,30 @@
 
 ## Federation from other servers fails
 
-- Port **8448** closed or not delegated.
+- Port **8448** closed or not delegated (crew uses well-known → `:443` via Caddy instead).
 - `.well-known/matrix/server` missing/wrong.
 - TLS certificate problems on federation endpoint.
+- Signing key rotated without keeping old keys in `old_verify_keys`.
+
+## `Invalid signature for server matrix.crew.oh.energy with key ed25519:…` when joining a **remote** room
+
+This error is misleading: it usually means the **remote** homeserver failed to verify **our** federation request auth, not that our key file is corrupt.
+
+Synapse signs the request URI **percent-encoded** (`%21`, `%40`, `%3A`). The remote Synapse verifies against `request.uri` as Twisted sees it. If their reverse proxy **decodes** the path before Synapse, verification fails with `BadSignatureError`.
+
+**Check (crew is OK):** through our Caddy, signing the encoded URI works and signing the raw URI fails — encoding is preserved.
+
+**Check (remote is broken):** against the remote, signing the **raw** URI works and signing the **encoded** URI fails — their proxy is decoding.
+
+**Fix:** remote admin must stop URI canonicalization:
+
+- Apache: `ProxyPass … nocanon` (and `AllowEncodedSlashes NoDecode` where needed)
+- Nginx: `proxy_pass http://backend;` **without** a URI path after the host (a path forces normalize/decode)
+- See [Synapse #3294](https://github.com/matrix-org/synapse/issues/3294) and Synapse reverse-proxy docs
+
+Do **not** patch our Synapse to sign decoded URIs — that breaks correctly configured servers.
+
+Crew example (2026-08-28): joining a room on `matrix.crab.la` failed this way; invite inbound to crew still worked.
 
 ## Element cannot find auth issuer
 
