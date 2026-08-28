@@ -1,0 +1,8 @@
+.references/
+.env
+config/secrets/
+config/synapse/homeserver.yaml
+config/mas/config.yaml
+*.pem
+*.key
+!config/synapse/log.config

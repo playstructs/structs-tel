@@ -1,0 +1,62 @@
+# Synapse homeserver — render with scripts/render-configs.sh or render-configs.py
+# Or hand-edit a copy under config/synapse/homeserver.yaml for your guild.
+
+server_name: "${MATRIX_SERVER_NAME}"
+public_baseurl: "${SYNAPSE_PUBLIC_BASEURL}"
+
+pid_file: /data/homeserver.pid
+web_client_location: null
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses: ['0.0.0.0']
+    resources:
+      - names: [client, federation]
+        compress: false
+
+database:
+  name: psycopg2
+  # structs-pg databases are typically C.UTF-8; Synapse wants C. Safe for new empty DBs.
+  allow_unsafe_locale: true
+  args:
+    user: "${SYNAPSE_DB_USER}"
+    password: "${SYNAPSE_DB_PASSWORD}"
+    database: "${SYNAPSE_DB_NAME}"
+    host: "${STRUCTS_PG_HOST}"
+    port: ${STRUCTS_PG_PORT}
+    cp_min: 5
+    cp_max: 10
+    sslmode: prefer
+
+log_config: "/data/log.config"
+media_store_path: /data/media_store
+signing_key_path: "/data/signing.key"
+report_stats: false
+
+enable_registration: false
+registration_shared_secret: "${REGISTRATION_SHARED_SECRET}"
+
+macaroon_secret_key: "${MACAROON_SECRET_KEY}"
+form_secret: "${FORM_SECRET}"
+
+# Room v12 (post Aug 2025 security release)
+default_room_version: "12"
+
+# Delegate authentication to MAS
+matrix_authentication_service:
+  enabled: true
+  endpoint: http://structs-mas:8080/
+  secret: "${MAS_SYNAPSE_SHARED_SECRET}"
+
+password_config:
+  enabled: false
+
+suppress_key_server_warning: true
+
+serve_server_wellknown: true
+
+caches:
+  global_factor: 0.5

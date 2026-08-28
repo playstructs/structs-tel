@@ -1,0 +1,56 @@
+# Example Caddy snippets for Matrix + MAS
+
+Adapt hostnames. Point to the binds in `.env` (`127.0.0.1:8008` / `127.0.0.1:8081` by default).
+
+On crew, the live Caddyfile uses explicit `http://` / `https://` site blocks because
+`auto_https disable_redirects` is set (HTTP webapp must stay HTTP). Mirror that style.
+Also `admin off` means `systemctl reload caddy` cannot reach `:2019` — use
+`systemctl restart caddy` after edits.
+
+```caddy
+http://matrix.crew.oh.energy {
+	encode zstd gzip
+	handle /.well-known/matrix/client {
+		header Access-Control-Allow-Origin *
+		header Content-Type application/json
+		respond `{"m.homeserver":{"base_url":"https://matrix.crew.oh.energy"},"org.matrix.msc2965.authentication":{"issuer":"https://auth.crew.oh.energy/","account":"https://auth.crew.oh.energy/account"}}`
+	}
+	handle /.well-known/matrix/server {
+		header Access-Control-Allow-Origin *
+		header Content-Type application/json
+		respond `{"m.server":"matrix.crew.oh.energy:443"}`
+	}
+	handle {
+		reverse_proxy 127.0.0.1:8008
+	}
+}
+
+https://matrix.crew.oh.energy {
+	encode zstd gzip
+	handle /.well-known/matrix/client {
+		header Access-Control-Allow-Origin *
+		header Content-Type application/json
+		respond `{"m.homeserver":{"base_url":"https://matrix.crew.oh.energy"},"org.matrix.msc2965.authentication":{"issuer":"https://auth.crew.oh.energy/","account":"https://auth.crew.oh.energy/account"}}`
+	}
+	handle /.well-known/matrix/server {
+		header Access-Control-Allow-Origin *
+		header Content-Type application/json
+		respond `{"m.server":"matrix.crew.oh.energy:443"}`
+	}
+	handle {
+		reverse_proxy 127.0.0.1:8008
+	}
+}
+
+http://auth.crew.oh.energy {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8081
+}
+
+https://auth.crew.oh.energy {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8081
+}
+```
+
+If `MATRIX_SERVER_NAME` is a bare domain that differs from the client API host, put `/.well-known/matrix/*` on the **server_name** host per Matrix delegation rules.

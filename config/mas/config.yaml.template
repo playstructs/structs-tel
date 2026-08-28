@@ -1,0 +1,68 @@
+# Matrix Authentication Service — template (render with scripts/render-configs.sh)
+#
+# Upstream OIDC = guild structs-webapp issuer.
+# localpart comes from OIDC `sub` (= structs player.id, e.g. 1-42).
+# The standalone secrets placeholder line below is replaced from
+# config/secrets/mas-secrets.yaml at render time.
+
+http:
+  listeners:
+    - name: web
+      resources:
+        - name: discovery
+        - name: human
+        - name: oauth
+        - name: compat
+        - name: graphql
+        - name: assets
+      binds:
+        - address: "[::]:8080"
+      proxy_protocol: false
+  trusted_proxies:
+    - 192.168.0.0/16
+    - 172.16.0.0/12
+    - 10.0.0.0/8
+    - 127.0.0.1/8
+    - ::1/128
+  public_base: "${MAS_PUBLIC_BASE}"
+  issuer: "${MAS_PUBLIC_BASE}"
+
+database:
+  uri: "postgresql://${MAS_DB_USER}:${MAS_DB_PASSWORD}@${STRUCTS_PG_HOST}:${STRUCTS_PG_PORT}/${MAS_DB_NAME}?sslmode=prefer"
+
+MAS_SECRETS_BLOCK_GOES_HERE
+
+matrix:
+  kind: synapse
+  homeserver: "${MATRIX_SERVER_NAME}"
+  endpoint: "http://structs-matrix:8008/"
+  secret: "${MAS_SYNAPSE_SHARED_SECRET}"
+
+passwords:
+  enabled: false
+
+account:
+  password_registration_enabled: false
+  password_change_allowed: false
+  registration_token_required: false
+
+upstream_oauth2:
+  providers:
+    - id: "${MAS_UPSTREAM_PROVIDER_ID}"
+      human_name: "Structs Guild Login"
+      issuer: "${OIDC_ISSUER}"
+      client_id: "${OIDC_MAS_CLIENT_ID}"
+      client_secret: "${OIDC_MAS_CLIENT_SECRET}"
+      token_endpoint_auth_method: client_secret_basic
+      scope: "openid profile"
+      fetch_userinfo: true
+      claims_imports:
+        localpart:
+          action: require
+          template: "{{ user.sub }}"
+          on_conflict: add
+        displayname:
+          action: suggest
+          template: "{{ user.preferred_username }}"
+      additional_authorization_parameters:
+        prompt: "{% if logged_out %}login{% endif %}"

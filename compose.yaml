@@ -1,0 +1,87 @@
+# Structs Matrix chat stack (Synapse + MAS)
+#
+# Joins an existing guild Docker network and uses the guild structs-pg host
+# for two dedicated databases (synapse, mas). Does NOT modify docker-structs-guild;
+# see docs/DOCKER-STRUCTS-GUILD-HANDOFF.md for what that team should wire later.
+#
+# Example (crew):
+#   export GUILD_DOCKER_NETWORK=docker-structs-guild_default
+#   docker compose --env-file .env up -d
+
+name: structs-matrix
+
+services:
+  matrix-db-init:
+    image: postgres:17-alpine
+    profiles: ["init"]
+    environment:
+      PGHOST: ${STRUCTS_PG_HOST:-structs-pg}
+      PGPORT: ${STRUCTS_PG_PORT:-5432}
+      PGUSER: ${MATRIX_DB_ADMIN_USER:-structs}
+      PGDATABASE: ${MATRIX_DB_ADMIN_DATABASE:-structs}
+      SYNAPSE_DB_NAME: ${SYNAPSE_DB_NAME:-synapse}
+      SYNAPSE_DB_USER: ${SYNAPSE_DB_USER:-synapse}
+      SYNAPSE_DB_PASSWORD: ${SYNAPSE_DB_PASSWORD:?set SYNAPSE_DB_PASSWORD}
+      MAS_DB_NAME: ${MAS_DB_NAME:-mas}
+      MAS_DB_USER: ${MAS_DB_USER:-mas}
+      MAS_DB_PASSWORD: ${MAS_DB_PASSWORD:?set MAS_DB_PASSWORD}
+    volumes:
+      - ./scripts/init-matrix-dbs.sh:/init-matrix-dbs.sh:ro
+    entrypoint: ["/bin/sh", "/init-matrix-dbs.sh"]
+    networks:
+      - guild
+
+  mas:
+    image: ${MAS_IMAGE:-ghcr.io/element-hq/matrix-authentication-service:latest}
+    hostname: structs-mas
+    restart: unless-stopped
+    depends_on:
+      synapse:
+        condition: service_started
+    environment:
+      # Rendered config is mounted; secrets also available for debugging
+      MAS_CONFIG: /data/config.yaml
+    command: ["server", "--config=/data/config.yaml"]
+    volumes:
+      - ./config/mas/config.yaml:/data/config.yaml:ro
+      - mas-data:/data
+    ports:
+      - "${MAS_HTTP_BIND:-127.0.0.1}:${MAS_HTTP_PORT:-8081}:8080"
+    networks:
+      - guild
+
+  synapse:
+    image: ${SYNAPSE_IMAGE:-ghcr.io/element-hq/synapse:latest}
+    hostname: structs-matrix
+    restart: unless-stopped
+    environment:
+      SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
+    volumes:
+      - ./config/synapse/homeserver.yaml:/data/homeserver.yaml:ro
+      - ./config/synapse/log.config:/data/log.config:ro
+      - ./config/secrets/signing.key:/data/signing.key:ro
+      - synapse-data:/data
+    ports:
+      - "${SYNAPSE_CLIENT_BIND:-127.0.0.1}:${SYNAPSE_CLIENT_PORT:-8008}:8008"
+      - "${SYNAPSE_FEDERATION_BIND:-0.0.0.0}:${SYNAPSE_FEDERATION_PORT:-8448}:8448"
+    networks:
+      - guild
+
+  # One-shot: Synapse image runs as uid 991; Docker volumes default to root.
+  synapse-fix-perms:
+    image: alpine:3.20
+    profiles: ["init"]
+    volumes:
+      - synapse-data:/data
+    command: ["sh", "-c", "mkdir -p /data/media_store && chown -R 991:991 /data"]
+
+networks:
+  guild:
+    external: true
+    name: ${GUILD_DOCKER_NETWORK:-docker-structs-guild_default}
+
+volumes:
+  synapse-data:
+    name: structs-matrix-synapse-data
+  mas-data:
+    name: structs-matrix-mas-data
