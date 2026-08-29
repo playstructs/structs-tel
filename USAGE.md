@@ -703,6 +703,31 @@ auto_join_mxid_localpart: "guild-bot"   # The user that sends join invites
 
 This way, when a new guild member authenticates for the first time and their account is auto-created, they're immediately placed in the guild's core rooms.
 
+### Fleet public rooms (hybrid ensure)
+
+Each player fleet gets a **public** room created by `@guild-bot` (never by the player):
+
+| Field | Convention |
+|---|---|
+| Alias | `#fleet-{fleetId}` e.g. `#fleet-9-42:matrix.example` |
+| Fleet id | `9-{playerIndex}` — Matrix user is `@1-{playerIndex}:…` |
+| Owner PL | player MXID at power level 100 |
+
+Idempotent script (token in `config/secrets/guild-bot.compatibility-token` or `GUILD_BOT_TOKEN`):
+
+```bash
+export MATRIX_SERVER_NAME=matrix.example
+./scripts/ensure-fleet-room.py --player-id 1-42
+# or: ./scripts/ensure-fleet-room.py --fleet-id 9-42
+```
+
+Full upgrade path (directory listing + MSC4108 QR + fleet): [docs/UPGRADE.md](docs/UPGRADE.md).
+
+### Channel listing and QR device linking
+
+- Public rooms (`visibility: "public"`) appear in Element Explore when Synapse has `enable_room_list_search: true` (default in this repo’s template).
+- Primary second-device path is Element MSC4108 device linking (Synapse `msc4108_enabled` + MAS `/device`/`/link`). Fallback: deep-link OIDC / wallet login on the new device.
+
 ---
 
 ## Admin API Reference

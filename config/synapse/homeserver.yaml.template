@@ -58,5 +58,18 @@ suppress_key_server_warning: true
 
 serve_server_wellknown: true
 
+# Public room directory (Element Explore / POST /publicRooms).
+# Synapse defaults deny all publication when rules are unset — allow guild-bot only.
+enable_room_list_search: true
+room_list_publication_rules:
+  - user_id: "@guild-bot:${MATRIX_SERVER_NAME}"
+    action: allow
+  - action: deny
+
+# MSC4108 — Element “Sign in with QR” / device linking (rendezvous stays on Synapse;
+# MAS serves /device and /link on the auth host). Requires Element + MAS support.
+experimental_features:
+  msc4108_enabled: true
+
 caches:
   global_factor: 0.5

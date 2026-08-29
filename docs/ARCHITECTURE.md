@@ -41,4 +41,14 @@ Player IDs are immutable; wallet addresses are not — that is why `sub` is not 
 
 ## Room version
 
-Default Synapse room version is **12** (creator infinite power). Bootstrap rooms with a long-lived bot account when you get to day-2 ops — see USAGE.md.
+Default Synapse room version is **12** (creator infinite power). Bootstrap rooms with a long-lived bot account (`@guild-bot`) — see USAGE.md and [UPGRADE.md](UPGRADE.md).
+
+## Channel listing and device linking
+
+| Feature | Mechanism |
+|---|---|
+| Public channel list | Synapse `enable_room_list_search` + rooms with `visibility: public` → Element Explore / `POST /publicRooms` |
+| QR “link new device” | MSC4108: Synapse rendezvous + MAS `/device`/`/link` (`experimental_features.msc4108_enabled`) |
+| Fleet rooms | Hybrid ensure: `@guild-bot` creates `#fleet-{fleetId}` (`9-N` ↔ player `1-N`), owner at PL 100 — `scripts/ensure-fleet-room.py` |
+
+Proxy rule: `auth.` → MAS (incl. `/device`, `/link`); `matrix.` → Synapse (incl. `/_synapse/client/rendezvous`).

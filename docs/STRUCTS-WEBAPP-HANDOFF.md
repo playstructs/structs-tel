@@ -139,12 +139,21 @@ php bin/console app:oidc:seed-client \
 
 ---
 
-## 5. Out of scope for webapp (FYI)
+## 5. Optional: fleet room ensure after first Matrix login
+
+Day-2 ops create public fleet rooms as `@guild-bot` (`#fleet-9-N` ↔ player `1-N`) via `structs-tel/scripts/ensure-fleet-room.py`. A future webapp hook can call that script (or the same Client-Server createRoom flow with the guild-bot token) after a player’s first successful Matrix session.
+
+Do **not** create fleet rooms as the player — room v12 makes the creator permanently infinitely privileged. Keep ensure idempotent and server-side.
+
+Not required for the NumericDate / key-permission PR above.
+
+## 6. Out of scope for webapp (FYI)
 
 Handled in `structs-tel` / guild infra, not this PR:
 
 - Synapse + MAS compose, DB init, Caddy for `matrix.` / `auth.`
 - `structs-pg` TLS must be X.509 **v3** (MAS rustls rejects v1 certs)
 - Synapse volume ownership uid 991; `allow_unsafe_locale` for C.UTF-8 Postgres
+- MSC4108 / public room directory / guild-bot token storage — see `structs-tel/docs/UPGRADE.md`
 
 Full diary: `structs-tel/docs/CREW-REFERENCE.md`.

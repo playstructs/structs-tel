@@ -7,6 +7,16 @@ On crew, the live Caddyfile uses explicit `http://` / `https://` site blocks bec
 Also `admin off` means `systemctl reload caddy` cannot reach `:2019` — use
 `systemctl restart caddy` after edits.
 
+## Routing rules (MSC4108 QR device linking)
+
+| Host | Path | Backend |
+|---|---|---|
+| `auth.<guild>` | `/` (incl. `/device`, `/link`, `/authorize`, `/upstream/…`) | **MAS** (`127.0.0.1:8081`) |
+| `matrix.<guild>` | `/_synapse/client/rendezvous`, unstable MSC4108 rendezvous | **Synapse** (do not send to MAS) |
+| `matrix.<guild>` | `/_matrix/…`, `/.well-known/matrix/…` | **Synapse** |
+
+When `auth` and `matrix` are separate hostnames (structs-tel default), a full reverse_proxy of each host to the right service is enough. If you ever put MAS and Synapse on one hostname, carve MAS paths explicitly and leave rendezvous on Synapse.
+
 ```caddy
 http://matrix.crew.oh.energy {
 	encode zstd gzip
@@ -20,6 +30,7 @@ http://matrix.crew.oh.energy {
 		header Content-Type application/json
 		respond `{"m.server":"matrix.crew.oh.energy:443"}`
 	}
+	# Synapse: CS API, federation via 443, MSC4108 rendezvous
 	handle {
 		reverse_proxy 127.0.0.1:8008
 	}
@@ -42,6 +53,7 @@ https://matrix.crew.oh.energy {
 	}
 }
 
+# MAS: OIDC + human UI including /device and /link (MSC4108 confirmation pages)
 http://auth.crew.oh.energy {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:8081

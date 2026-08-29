@@ -9,6 +9,7 @@ Players authenticate with the **existing webapp OIDC provider** (Cosmos signatur
 | Doc | When to read it |
 |---|---|
 | [docs/SETUP.md](docs/SETUP.md) | Standing up Matrix for a guild |
+| [docs/UPGRADE.md](docs/UPGRADE.md) | Existing deploy → directory listing, MSC4108 QR, fleet rooms |
 | [docs/CHECKLIST.md](docs/CHECKLIST.md) | Go-live checkbox list |
 | [docs/CREW-REFERENCE.md](docs/CREW-REFERENCE.md) | What we did on `crew.oh.energy` (replicate this) |
 | [docs/RUNBOOK.md](docs/RUNBOOK.md) | Restarts, re-seed, rotations |
@@ -46,3 +47,5 @@ docker compose up -d
 - **Not** merged into `docker-structs-guild` by this repo — handoff only
 - Matrix DBs (`synapse`, `mas`) live on **`structs-pg`**, created by **this** repo’s init script
 - OIDC `sub` / Matrix localpart = **`player.id`** (e.g. `@1-42:matrix.example`)
+- Public rooms appear in Element Explore (`enable_room_list_search`); QR device linking is MSC4108 via MAS
+- Guild/fleet rooms are created by **`@guild-bot`** only (room v12); fleet alias `#fleet-9-N` ↔ player `@1-N` — see [docs/UPGRADE.md](docs/UPGRADE.md)

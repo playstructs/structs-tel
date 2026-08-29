@@ -56,7 +56,15 @@ Print or copy. Check every box before calling Matrix chat “up.”
 - [ ] Second login with existing webapp session is silent / near-silent
 - [ ] Cold browser still completes (wallet SPA resume) or blocker documented
 
-## I. Handoff / ops
+## I. Directory / QR / fleet (day-2)
+
+- [ ] `@guild-bot` registered; `config/secrets/guild-bot.compatibility-token` mode `600`
+- [ ] `/_matrix/client/versions` → `org.matrix.msc4108: true`
+- [ ] Public rooms appear via `POST /publicRooms` / Element Explore
+- [ ] At least one `#fleet-9-N` ensured via `scripts/ensure-fleet-room.py` (or backfill planned)
+- [ ] Full replicate path: [UPGRADE.md](UPGRADE.md)
+
+## J. Handoff / ops
 
 - [ ] [CREW-REFERENCE.md](CREW-REFERENCE.md) or your guild’s diary updated
 - [ ] [DOCKER-STRUCTS-GUILD-HANDOFF.md](DOCKER-STRUCTS-GUILD-HANDOFF.md) reviewed if compose integration is desired later

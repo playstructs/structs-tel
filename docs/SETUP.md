@@ -221,6 +221,17 @@ Sample snippets: [config/caddy/](../config/caddy/). Guild proxy integration is d
 
 Silent path: already logged into the webapp in the same browser → authorize should bounce back quickly.
 
-## 10. Record what you did
+## 10. Guild-bot, directory, QR, fleet rooms
+
+Templates already enable the public room directory and MSC4108. After first login works:
+
+1. Register `@guild-bot` and store a compatibility token (see [UPGRADE.md](UPGRADE.md) §2).
+2. Create guild public rooms as guild-bot (`visibility: public`) so they appear in Element Explore.
+3. Smoke-test Explore + optional QR device linking ([UPGRADE.md](UPGRADE.md) §5–6).
+4. Ensure fleet rooms with `scripts/ensure-fleet-room.py` ([UPGRADE.md](UPGRADE.md) §7).
+
+Existing stacks that predate these flags: follow [UPGRADE.md](UPGRADE.md) end-to-end.
+
+## 11. Record what you did
 
 Copy commands and outcomes into your guild diary, or append to [CREW-REFERENCE.md](CREW-REFERENCE.md) if this is the reference host. Future you will thank present you.

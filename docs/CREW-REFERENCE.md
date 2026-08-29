@@ -105,6 +105,9 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://auth.crew.oh.energy/
 | 2026-08-28 Caddy | DNS ready for matrix/auth | LE certs issued; HTTPS probes OK |
 | 2026-08-28 Element | `/oauth/authorize` → 500 | `config/oidc/private.key` was `root:600` after `app:oidc:generate-key`; `chown www-data` + `chmod 640`. Authorize now 302 → `/?oidc=<id>` (wallet login resume) |
 | 2026-08-28 federation | Join remote room on `matrix.crab.la` → `Invalid signature … ed25519:a_KAru` | Not our signing key. Remote reverse proxy **decodes** `%21`/`%40`/`%3A` before Synapse verifies auth. Crew Caddy preserves encoding (verified). Remote admin must fix proxy (`nocanon` / nginx `proxy_pass` without URI path). See TROUBLESHOOTING.md |
+| 2026-08-29 features | Room directory + MSC4108 off by default in older Synapse configs | Template: `enable_room_list_search: true`, `experimental_features.msc4108_enabled: true`; re-render + recreate Synapse. Replicate: [UPGRADE.md](UPGRADE.md) |
+| 2026-08-29 features | `Not allowed to publish room` despite guild-bot creator | Synapse defaults empty `room_list_publication_rules` → deny all. Allow `@guild-bot` only in template |
+| 2026-08-29 features | Fleet rooms must not be player-created (v12) | `scripts/ensure-fleet-room.py` as `@guild-bot`; alias `#fleet-9-N` ↔ player `1-N`. Crew: `#fleet-9-3076` ensured |
 
 ## Final working shape
 
@@ -118,4 +121,7 @@ Element login: pending manual smoke test
 Matrix MXID example: pending
 Notes: structs-pg TLS cert must stay X.509 v3 for MAS; Caddy admin off → restart not reload
 Public room: #orbital-hydro:matrix.crew.oh.energy (Orbital Hydro), created by @guild-bot:matrix.crew.oh.energy
+Directory + MSC4108: enable_room_list_search + msc4108_enabled + room_list_publication_rules (guild-bot allow)
+Fleet rooms: ensure via scripts/ensure-fleet-room.py (guild-bot); example #fleet-9-3076:matrix.crew.oh.energy
+publicRooms: Orbital Hydro + Fleet 9-3076 listed
 ```
