@@ -17,7 +17,9 @@ openssl rand -hex 32 > "${OUT}/mas_db_password.txt"
 openssl rand -hex 32 > "${OUT}/registration_shared_secret.txt"
 openssl rand -hex 32 > "${OUT}/macaroon_secret_key.txt"
 openssl rand -hex 32 > "${OUT}/form_secret.txt"
-openssl rand -base64 32 > "${OUT}/oidc_mas_client_secret.txt"
+# Hex, not base64: MAS client_secret_basic RFC-encodes + / = before Basic auth;
+# league/oauth2-server does not urldecode → 401 invalid_client on /oauth/token.
+openssl rand -hex 32 > "${OUT}/oidc_mas_client_secret.txt"
 
 if [ ! -f "${OUT}/mas-secrets.yaml" ]; then
   echo "Generating MAS secrets block via mas-cli config generate..."

@@ -11,6 +11,58 @@
 - Permissions / bind-mount path wrong.
 - Run `php bin/console app:oidc:generate-key` and persist files.
 
+## MAS `/upstream/callback` → 500, webapp `/oauth/token` → `invalid_client`
+
+Wallet login succeeded; MAS then logs:
+
+```text
+Request to the token endpoint failed
+"invalid_client": Client authentication failed
+GET /upstream/callback/<provider-id> → 500
+```
+
+MAS uses `token_endpoint_auth_method: client_secret_basic`. RFC 6749 §2.3.1 percent-encodes the secret before Base64. `league/oauth2-server` does **not** urldecode Basic credentials. A secret from `openssl rand -base64 32` often contains `+`, `/`, or `=` (a leading `+` is enough). MAS sends `%2B…`; the webapp hashes a different string → 401.
+
+Confirm (dummy code; 401 means client auth failed, 400 `invalid_grant` means the secret was accepted):
+
+```bash
+# RFC-encoded Basic — this is what MAS sends. Must NOT be 401 after a hex rotate.
+python3 - <<'PY'
+import base64, subprocess
+from urllib.parse import quote
+from pathlib import Path
+
+def parse(path, key):
+    for line in Path(path).read_text().splitlines():
+        if line.startswith(key + "="):
+            v = line.split("=", 1)[1].strip().strip("'\"")
+            return v
+    raise SystemExit(f"missing {key}")
+
+secret = parse(".env", "OIDC_MAS_CLIENT_SECRET")
+cid = parse(".env", "OIDC_MAS_CLIENT_ID")
+issuer = parse(".env", "OIDC_ISSUER").rstrip("/")
+rfc = base64.b64encode(f"{quote(cid, safe='')}:{quote(secret, safe='')}".encode()).decode()
+subprocess.check_call([
+    "curl", "-sS", "-o", "/tmp/oidc-token.body", "-w", "%{http_code}\\n",
+    "-X", "POST", f"{issuer}/oauth/token",
+    "-H", f"Authorization: Basic {rfc}",
+    "-H", "Content-Type: application/x-www-form-urlencoded",
+    "-d", "grant_type=authorization_code&code=dummy&client_id=" + cid,
+])
+print(Path("/tmp/oidc-token.body").read_text()[:300])
+PY
+```
+
+Fix:
+
+1. `NEW=$(openssl rand -hex 32)` — no `+` `/` `=`
+2. Set `OIDC_MAS_CLIENT_SECRET` in **this repo’s `.env` and the webapp `.env`**
+3. `php bin/console app:oidc:seed-client` (same secret + existing redirect URI)
+4. `./scripts/render-configs.sh` then `docker compose up -d --force-recreate mas`
+
+`./scripts/generate-secrets.sh` and `crew-bootstrap.sh` now emit hex. `./scripts/render-configs.sh` warns if an old base64 secret is still in `.env`. Re-seeding without rotating does nothing.
+
 ## MAS or Element: redirect_uri mismatch / immediate failure
 
 - Seeded `OIDC_MAS_REDIRECT_URI` must **exactly** equal  

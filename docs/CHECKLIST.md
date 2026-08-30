@@ -13,6 +13,7 @@ Print or copy. Check every box before calling Matrix chat “up.”
 
 - [ ] `.env` filled from `.env.example`
 - [ ] `./scripts/generate-secrets.sh` run (or equivalent)
+- [ ] `OIDC_MAS_CLIENT_SECRET` is hex (`openssl rand -hex 32`). Base64 `+` `/` `=` → MAS 401 `invalid_client` (see TROUBLESHOOTING.md)
 - [ ] `MAS_UPSTREAM_PROVIDER_ID` is a real ULID (stable forever for this guild)
 - [ ] `./scripts/render-configs.sh` produced `config/synapse/homeserver.yaml` and `config/mas/config.yaml`
 - [ ] `config/secrets/signing.key` exists and is mounted into Synapse

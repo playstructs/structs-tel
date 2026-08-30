@@ -448,6 +448,10 @@ OIDC_JWT_KEY_ID=2026-01-key-1
 
 Redirect URI matching must be exact (scheme, host, path, trailing slash).
 
+`OIDC_MAS_CLIENT_SECRET` must be hex (`openssl rand -hex 32`). Base64 secrets
+that contain `+`, `/`, or `=` fail MAS `client_secret_basic` against
+`league/oauth2-server` (401 `invalid_client`). See `docs/TROUBLESHOOTING.md`.
+
 ---
 
 ## 11. SPA / frontend work (minimal)

@@ -50,6 +50,8 @@ Set at least:
 ./scripts/generate-secrets.sh
 # Merge config/secrets/.env.generated into .env
 # Ensure MATRIX_SERVER_NAME matches what you passed / will use
+# OIDC_MAS_CLIENT_SECRET must be hex (the script emits openssl rand -hex 32).
+# Do not substitute openssl rand -base64 32 — see TROUBLESHOOTING.md invalid_client.
 ```
 
 Produces (all gitignored under `config/secrets/`):
@@ -125,7 +127,7 @@ docker exec -it docker-structs-guild-structs-webapp-1 \
 OIDC_ENABLED=true
 OIDC_ISSUER=https://crew.oh.energy
 OIDC_MAS_CLIENT_ID=matrix-auth-service
-OIDC_MAS_CLIENT_SECRET=<same as this repo .env OIDC_MAS_CLIENT_SECRET>
+OIDC_MAS_CLIENT_SECRET=<same hex as this repo .env; openssl rand -hex 32>
 OIDC_MAS_REDIRECT_URI=   # set after step 7, or pass on seed CLI
 OIDC_JWT_PRIVATE_KEY_PATH=config/oidc/private.key
 OIDC_JWT_PUBLIC_KEY_PATH=config/oidc/public.key

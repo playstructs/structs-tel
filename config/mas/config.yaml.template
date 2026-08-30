@@ -52,6 +52,7 @@ upstream_oauth2:
       human_name: "Structs Guild Login"
       issuer: "${OIDC_ISSUER}"
       client_id: "${OIDC_MAS_CLIENT_ID}"
+      # Must be hex (no + / =). See generate-secrets.sh and docs/TROUBLESHOOTING.md.
       client_secret: "${OIDC_MAS_CLIENT_SECRET}"
       token_endpoint_auth_method: client_secret_basic
       scope: "openid profile"

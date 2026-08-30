@@ -71,6 +71,34 @@ Crew applied this live under `~/structs-webapp/src/src/Oidc/IdTokenResponse.php`
 
 ---
 
+## 1b. Ops: OIDC client secret must be hex (not base64)
+
+### Symptom
+
+After wallet login, MAS upstream callback fails with a generic 500. MAS log:
+
+```text
+Request to the token endpoint failed
+"invalid_client": Client authentication failed
+GET /upstream/callback/<provider_id> → 500
+```
+
+`curl` with raw HTTP Basic against `/oauth/token` may return `invalid_grant` (secret accepted) while MAS still 401s.
+
+### Cause
+
+MAS `token_endpoint_auth_method: client_secret_basic` percent-encodes the secret before Base64 (RFC 6749 §2.3.1). `league/oauth2-server` `AbstractGrant::getBasicAuthCredentials` does not urldecode. `openssl rand -base64 32` commonly emits `+`, `/`, `=`.
+
+### Fix (ops, any guild)
+
+Use hex: `openssl rand -hex 32`. Put the same value in structs-tel `.env` and webapp `.env`, re-run `app:oidc:seed-client`, re-render MAS, recreate the MAS container. Re-seeding the old secret does not help.
+
+### Suggested product improvement
+
+In `getBasicAuthCredentials` (or a wrapper), `rawurldecode` the Basic username and password so RFC-encoded secrets still verify. structs-tel generators now emit hex so new deploys do not depend on that.
+
+---
+
 ## 2. Ops: `app:oidc:generate-key` file ownership
 
 ### Symptom

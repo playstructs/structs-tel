@@ -63,6 +63,23 @@ def render(template: Path, dest: Path, env: dict[str, str]) -> None:
     print(f"Wrote {dest}")
 
 
+def warn_oidc_secret(secret: str) -> None:
+    """MAS RFC-encodes Basic auth; league/oauth2-server does not urldecode."""
+    bad = [c for c in "+/=" if c in secret]
+    if not bad:
+        return
+    shown = ", ".join(repr(c) for c in bad)
+    print(
+        f"WARNING: OIDC_MAS_CLIENT_SECRET contains {shown}. "
+        "MAS client_secret_basic percent-encodes those before HTTP Basic; "
+        "the webapp does not decode them, so /oauth/token returns 401 "
+        "invalid_client and Element/MAS login 500s. Rotate to "
+        "`openssl rand -hex 32`, re-seed app:oidc:seed-client, re-render, "
+        "recreate mas. See docs/TROUBLESHOOTING.md.",
+        file=sys.stderr,
+    )
+
+
 def main() -> None:
     env = {**os.environ, **load_env(ROOT / ".env")}
     env.setdefault("STRUCTS_PG_HOST", "structs-pg")
@@ -71,6 +88,7 @@ def main() -> None:
     env.setdefault("SYNAPSE_DB_USER", "synapse")
     env.setdefault("MAS_DB_NAME", "mas")
     env.setdefault("MAS_DB_USER", "mas")
+    warn_oidc_secret(env.get("OIDC_MAS_CLIENT_SECRET", ""))
 
     render(
         ROOT / "config/synapse/homeserver.yaml.template",

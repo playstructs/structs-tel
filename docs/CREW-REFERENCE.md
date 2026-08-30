@@ -107,7 +107,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://auth.crew.oh.energy/
 | 2026-08-28 federation | Join remote room on `matrix.crab.la` → `Invalid signature … ed25519:a_KAru` | Not our signing key. Remote reverse proxy **decodes** `%21`/`%40`/`%3A` before Synapse verifies auth. Crew Caddy preserves encoding (verified). Remote admin must fix proxy (`nocanon` / nginx `proxy_pass` without URI path). See TROUBLESHOOTING.md |
 | 2026-08-29 features | Room directory + MSC4108 off by default in older Synapse configs | Template: `enable_room_list_search: true`, `experimental_features.msc4108_enabled: true`; re-render + recreate Synapse. Replicate: [UPGRADE.md](UPGRADE.md) |
 | 2026-08-29 features | `Not allowed to publish room` despite guild-bot creator | Synapse defaults empty `room_list_publication_rules` → deny all. Allow `@guild-bot` only in template |
-| 2026-08-29 features | Fleet rooms must not be player-created (v12) | `scripts/ensure-fleet-room.py` as `@guild-bot`; alias `#fleet-9-N` ↔ player `1-N`. Crew: `#fleet-9-3076` ensured |
+| 2026-08-30 beta | MAS callback 500; `/oauth/token` `invalid_client` | `OIDC_MAS_CLIENT_SECRET` from `openssl rand -base64 32` (leading `+`). MAS RFC-encodes Basic; webapp does not urldecode. Rotate to hex, re-seed, recreate MAS. Generator now emits hex. |
 
 ## Final working shape
 

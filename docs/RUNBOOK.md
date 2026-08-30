@@ -25,7 +25,7 @@ docker compose up -d --force-recreate synapse mas
 
 ## Re-seed OIDC client
 
-Needed when redirect URI or client secret changes:
+Needed when redirect URI or client secret changes. If login 500s with `invalid_client` on `/oauth/token`, rotate to **hex** first (`openssl rand -hex 32`) — do not re-seed a base64 secret that contains `+` `/` `=`. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ```bash
 # 1. Update .env OIDC_MAS_CLIENT_SECRET / MAS config; render; recreate mas
