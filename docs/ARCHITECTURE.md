@@ -27,7 +27,7 @@ Element / Matrix client
 |---|---|
 | OIDC `sub` | `structs.player.id` (e.g. `1-42`) |
 | Matrix user ID | `@1-42:<MATRIX_SERVER_NAME>` |
-| `preferred_username` | player username (display only) |
+| `preferred_username` | player username (display only; MAS **forces** this as Matrix displayname on each login) |
 | `primary_address` | Cosmos address (descriptive only; not localpart) |
 
 Player IDs are immutable; wallet addresses are not — that is why `sub` is not the address.
@@ -47,8 +47,10 @@ Default Synapse room version is **12** (creator infinite power). Bootstrap rooms
 
 | Feature | Mechanism |
 |---|---|
-| Public channel list | Synapse `enable_room_list_search` + rooms with `visibility: public` → Element Explore / `POST /publicRooms` |
+| Public channel list | Synapse `enable_room_list_search` + `visibility: public` (not merely `join_rule: public`) + `allow_public_rooms_over_federation` |
 | QR “link new device” | MSC4108: Synapse rendezvous + MAS `/device`/`/link` (`experimental_features.msc4108_enabled`) |
-| Fleet rooms | Hybrid ensure: `@guild-bot` creates `#fleet-{fleetId}` (`9-N` ↔ player `1-N`), owner at PL 100 — `scripts/ensure-fleet-room.py` |
+| Fleet / planet rooms | Hybrid ensure: `@guild-bot` creates `#fleet-{fleetId}` / `#planet-{id}`, owner at PL 100 |
+| Presence | `presence.enabled: true` |
+| Encryption default | `encryption_enabled_by_default_for_room_type: "off"` — see [CLIENT-CONTRACT.md](CLIENT-CONTRACT.md) |
 
 Proxy rule: `auth.` → MAS (incl. `/device`, `/link`); `matrix.` → Synapse (incl. `/_synapse/client/rendezvous`).

@@ -292,8 +292,8 @@ upstream_oauth2:
           action: require
           template: "{{ user.sub }}"        # player.id as Matrix localpart
         displayname:
-          action: suggest
-          template: "{{ user.preferred_username }}"
+          action: force
+          template: "{{ user.preferred_username or user.sub }}"
 
 passwords:
   enabled: false          # no local passwords; Cosmos signature only
@@ -464,8 +464,8 @@ upstream_oauth2:
           action: require
           template: "{{ user.sub }}"
         displayname:
-          action: suggest
-          template: "{{ user.preferred_username }}"
+          action: force
+          template: "{{ user.preferred_username or user.sub }}"
 
 passwords:
   enabled: false

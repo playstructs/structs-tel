@@ -231,6 +231,7 @@ Templates already enable the public room directory and MSC4108. After first logi
 2. Create guild public rooms as guild-bot (`visibility: public`) so they appear in Element Explore.
 3. Smoke-test Explore + optional QR device linking ([UPGRADE.md](UPGRADE.md) §5–6).
 4. Ensure fleet rooms with `scripts/ensure-fleet-room.py` ([UPGRADE.md](UPGRADE.md) §7).
+5. Follow [CLIENT-CONTRACT.md](CLIENT-CONTRACT.md) (federated directory, presence, unencrypted DMs, alias/power levels, display-name force).
 
 Existing stacks that predate these flags: follow [UPGRADE.md](UPGRADE.md) end-to-end.
 

@@ -181,8 +181,8 @@ const room = await matrixClient.createRoom({
     name: "General",
     topic: "General guild discussion",
     room_alias_name: "general",     // becomes #general:guild.structs.game
-    visibility: "private",          // "public" to list in directory
-    preset: "private_chat",         // or "public_chat", "trusted_private_chat"
+    visibility: "public",           // MUST be public to list in the directory
+    preset: "public_chat",          // or "private_chat", "trusted_private_chat"
     initial_state: [
         {
             type: "m.room.join_rules",
@@ -719,13 +719,18 @@ Idempotent script (token in `config/secrets/guild-bot.compatibility-token` or `G
 export MATRIX_SERVER_NAME=matrix.example
 ./scripts/ensure-fleet-room.py --player-id 1-42
 # or: ./scripts/ensure-fleet-room.py --fleet-id 9-42
+# generic published room (planet, lobby, …):
+./scripts/ensure-published-room.py --alias-local planet-2-15361 --name "Planet 2-15361"
 ```
 
 Full upgrade path (directory listing + MSC4108 QR + fleet): [docs/UPGRADE.md](docs/UPGRADE.md).
+Game-client contract (encryption, presence, federated directory, mentions): [docs/CLIENT-CONTRACT.md](docs/CLIENT-CONTRACT.md).
 
 ### Channel listing and QR device linking
 
-- Public rooms (`visibility: "public"`) appear in Element Explore when Synapse has `enable_room_list_search: true` (default in this repo’s template).
+- Public rooms (`visibility: "public"`) appear in Element Explore / Comms Browse when Synapse has `enable_room_list_search: true` and `@guild-bot` is allowed to publish. `join_rule: public` alone does **not** list the room.
+- Other guilds can query our directory only if `allow_public_rooms_over_federation: true`.
+- Per-object aliases (`#fleet-9-N`, `#planet-{id}`) and power levels: [docs/CLIENT-CONTRACT.md](docs/CLIENT-CONTRACT.md). Generic helper: `scripts/ensure-published-room.py`.
 - Primary second-device path is Element MSC4108 device linking (Synapse `msc4108_enabled` + MAS `/device`/`/link`). Fallback: deep-link OIDC / wallet login on the new device.
 
 ---

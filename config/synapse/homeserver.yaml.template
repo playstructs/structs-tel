@@ -60,11 +60,32 @@ serve_server_wellknown: true
 
 # Public room directory (Element Explore / POST /publicRooms).
 # Synapse defaults deny all publication when rules are unset — allow guild-bot only.
+# join_rule: public is NOT enough; createRoom must also set visibility: public.
 enable_room_list_search: true
 room_list_publication_rules:
   - user_id: "@guild-bot:${MATRIX_SERVER_NAME}"
     action: allow
   - action: deny
+# Other guilds' clients call GET /publicRooms?server=<us>. Default is M_FORBIDDEN.
+allow_public_rooms_over_federation: true
+
+# Message search (POST /search). Distinct from enable_room_list_search.
+enable_search: true
+
+# Game clients (Comms) have no E2EE. Do not default-encrypt rooms Synapse creates.
+# Quote "off" so YAML does not parse it as boolean false. Element may still encrypt
+# DMs it creates itself — see docs/CLIENT-CONTRACT.md.
+encryption_enabled_by_default_for_room_type: "off"
+
+# Who is around (roster / “online now”). Default is already true; set explicitly
+# so copied “disable presence to save CPU” configs cannot turn it off by accident.
+presence:
+  enabled: true
+
+# Raid / battle chat bursts. Synapse default is 0.2/s burst 10 — too tight.
+rc_message:
+  per_second: 1.0
+  burst_count: 30.0
 
 # MSC4108 — Element “Sign in with QR” / device linking (rendezvous stays on Synapse;
 # MAS serves /device and /link on the auth host). Requires Element + MAS support.

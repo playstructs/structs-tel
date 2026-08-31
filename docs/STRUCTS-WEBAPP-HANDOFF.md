@@ -142,6 +142,7 @@ These already match what MAS needs on crew; keep them stable:
 |---|---|
 | Issuer | Public HTTPS origin, no trailing slash (e.g. `https://crew.oh.energy`) |
 | `sub` | `player.id` (e.g. `1-42`) — Matrix localpart |
+| `preferred_username` / `name` | `player.username` (MAS forces this as displayname) |
 | Scopes | `openid profile` |
 | PKCE | S256 required |
 | Client | Confidential; seed with exact MAS callback URI |
@@ -163,6 +164,7 @@ php bin/console app:oidc:seed-client \
 - [ ] Test: issued `id_token` has integer `iat`/`exp`
 - [ ] Test or doc: key files readable by runtime user after `generate-key` (section 2)
 - [ ] Note in existing `docs/matrix-oidc-*-handoff.md`: MAS rejects fractional NumericDate
+- [ ] Keep `preferred_username` / `name` = `player.username` (MAS forces this as displayname)
 - [ ] No change required to `sub` / claims mapping unless you diverge from `player.id`
 
 ---

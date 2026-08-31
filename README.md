@@ -16,7 +16,7 @@ Players authenticate with the **existing webapp OIDC provider** (Cosmos signatur
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Login loops, 404 discovery, JWKS, redirects |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the pieces fit |
 | [docs/DOCKER-STRUCTS-GUILD-HANDOFF.md](docs/DOCKER-STRUCTS-GUILD-HANDOFF.md) | For the guild-compose team (we do not edit that repo) |
-| [docs/STRUCTS-WEBAPP-HANDOFF.md](docs/STRUCTS-WEBAPP-HANDOFF.md) | For the webapp team: ID-token NumericDate fix + OIDC key perms |
+| [docs/CLIENT-CONTRACT.md](docs/CLIENT-CONTRACT.md) | What every guild and the game client must implement (directory, presence, encryption, aliases) |
 | [OIDC-PROVIDER.md](OIDC-PROVIDER.md) | Webapp OIDC contract (already implemented upstream) |
 | [PLANNING.md](PLANNING.md) / [USAGE.md](USAGE.md) | Broader Matrix design / admin notes |
 
@@ -47,5 +47,6 @@ docker compose up -d
 - **Not** merged into `docker-structs-guild` by this repo — handoff only
 - Matrix DBs (`synapse`, `mas`) live on **`structs-pg`**, created by **this** repo’s init script
 - OIDC `sub` / Matrix localpart = **`player.id`** (e.g. `@1-42:matrix.example`)
-- Public rooms appear in Element Explore (`enable_room_list_search`); QR device linking is MSC4108 via MAS
-- Guild/fleet rooms are created by **`@guild-bot`** only (room v12); fleet alias `#fleet-9-N` ↔ player `@1-N` — see [docs/UPGRADE.md](docs/UPGRADE.md)
+- Public rooms appear in Element Explore / Comms Browse (`enable_room_list_search` + federated directory); QR device linking is MSC4108 via MAS
+- Guild/fleet/planet rooms are created by **`@guild-bot`** only (room v12); fleet alias `#fleet-9-N` ↔ player `@1-N` — see [docs/UPGRADE.md](docs/UPGRADE.md) and [docs/CLIENT-CONTRACT.md](docs/CLIENT-CONTRACT.md)
+- Default encryption is **off**; Comms cannot read Element E2EE DMs

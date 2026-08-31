@@ -63,7 +63,9 @@ upstream_oauth2:
           template: "{{ user.sub }}"
           on_conflict: add
         displayname:
-          action: suggest
-          template: "{{ user.preferred_username }}"
+          # force: rewrite on every login to the webapp username (on-chain name).
+          # suggest lets Element (or anyone) keep a spoofed display name forever.
+          action: force
+          template: "{{ user.preferred_username or user.sub }}"
       additional_authorization_parameters:
         prompt: "{% if logged_out %}login{% endif %}"

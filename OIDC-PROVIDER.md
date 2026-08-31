@@ -406,8 +406,8 @@ claims_imports:
     action: require
     template: "{{ user.sub }}"
   displayname:
-    action: suggest
-    template: "{{ user.preferred_username }}"
+    action: force
+    template: "{{ user.preferred_username or user.sub }}"
 ```
 
 Matrix user ID becomes:

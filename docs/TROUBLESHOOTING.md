@@ -122,6 +122,13 @@ Do **not** patch our Synapse to sign decoded URIs — that breaks correctly conf
 
 Crew example (2026-08-28): joining a room on `matrix.crab.la` failed this way; invite inbound to crew still worked.
 
+## Browse / Explore is empty (`publicRooms` chunk empty)
+
+- Room is `join_rule: public` but was created with `visibility: private` (or never published). Publication is a **separate** flag.
+- Only `@guild-bot` may publish (`room_list_publication_rules`). Players and Comms get `Not allowed to publish room`.
+- Re-publish as guild-bot: `PUT /_matrix/client/v3/directory/list/room/{roomId}` `{"visibility":"public"}`.
+- Other guilds querying `?server=` get `M_FORBIDDEN` unless `allow_public_rooms_over_federation: true`. See [CLIENT-CONTRACT.md](CLIENT-CONTRACT.md).
+
 ## Element cannot find auth issuer
 
 - `.well-known/matrix/client` missing `org.matrix.msc2965.authentication` (or current auth discovery key your Element version expects).

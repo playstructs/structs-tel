@@ -61,8 +61,11 @@ Print or copy. Check every box before calling Matrix chat “up.”
 
 - [ ] `@guild-bot` registered; `config/secrets/guild-bot.compatibility-token` mode `600`
 - [ ] `/_matrix/client/versions` → `org.matrix.msc4108: true`
-- [ ] Public rooms appear via `POST /publicRooms` / Element Explore
+- [ ] Public rooms appear via `POST /publicRooms` / Element Explore / Comms Browse (`visibility: public`, not only join_rule)
+- [ ] `allow_public_rooms_over_federation: true`; `presence.enabled: true`; encryption `"off"`; `enable_search: true`
+- [ ] MAS `displayname.action: force`
 - [ ] At least one `#fleet-9-N` ensured via `scripts/ensure-fleet-room.py` (or backfill planned)
+- [ ] [CLIENT-CONTRACT.md](CLIENT-CONTRACT.md) reviewed with the game-client team
 - [ ] Full replicate path: [UPGRADE.md](UPGRADE.md)
 
 ## J. Handoff / ops

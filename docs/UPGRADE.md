@@ -1,4 +1,9 @@
-# UPGRADE — directory listing, QR device linking, fleet rooms
+# UPGRADE — directory listing, QR device linking, fleet rooms, Comms contract
+
+Operator guide to bring an **existing** structs-tel Matrix deploy up to this feature set.
+For a greenfield install, follow [SETUP.md](SETUP.md) (templates already include these defaults), then the fleet/guild-bot sections below.
+
+Crew.oh.energy is the reference implementation; failure diary lives in [CREW-REFERENCE.md](CREW-REFERENCE.md). Game-client requirements: [CLIENT-CONTRACT.md](CLIENT-CONTRACT.md). This file is the clean replicate path.
 
 Operator guide to bring an **existing** structs-tel Matrix deploy up to this feature set.
 For a greenfield install, follow [SETUP.md](SETUP.md) (templates already include these defaults), then the fleet/guild-bot sections below.
@@ -18,7 +23,7 @@ Crew.oh.energy is the reference implementation; failure diary lives in [CREW-REF
 cd ~/structs-tel   # or your checkout
 # pull / rsync latest structs-tel
 ./scripts/render-configs.sh
-grep -E 'enable_room_list_search|msc4108' config/synapse/homeserver.yaml
+grep -E 'enable_room_list_search|msc4108|allow_public_rooms_over_federation|encryption_enabled|enable_search|^presence:|rc_message' config/synapse/homeserver.yaml
 ```
 
 Expect:
@@ -29,11 +34,27 @@ room_list_publication_rules:
   - user_id: "@guild-bot:<MATRIX_SERVER_NAME>"
     action: allow
   - action: deny
+allow_public_rooms_over_federation: true
+enable_search: true
+encryption_enabled_by_default_for_room_type: "off"
+presence:
+  enabled: true
+rc_message:
+  per_second: 1.0
+  burst_count: 30.0
 experimental_features:
   msc4108_enabled: true
 ```
 
 Without `room_list_publication_rules`, Synapse refuses directory publication (`Not allowed to publish room`) even for room creators.
+`join_rule: public` without `visibility: public` still leaves Browse empty.
+
+Also confirm MAS forces the on-chain display name:
+
+```bash
+grep -A2 'displayname:' config/mas/config.yaml
+# expect: action: force
+```
 
 ## 2. Guild-bot (once per homeserver)
 
@@ -140,7 +161,36 @@ done
 
 Hybrid model: run ensure after first Matrix login (ops script or future webapp hook — see STRUCTS-WEBAPP-HANDOFF). Do **not** let players create these rooms themselves (v12 creator trap).
 
-## 8. Rollback
+Planet / lobby rooms (same publication rules):
+
+```bash
+python3 scripts/ensure-published-room.py \
+  --alias-local planet-2-15361 --name "Planet 2-15361" --owner-player-id 1-42
+```
+
+## 8. Comms / game-client flags (re-render + recreate MAS too)
+
+After pulling templates that add federated directory, presence, encryption-off, search, raid `rc_message`, and MAS `displayname.action: force`:
+
+```bash
+./scripts/render-configs.sh
+chown 991:991 config/secrets/signing.key   # if Synapse uid cannot read it
+docker compose up -d --force-recreate synapse mas
+```
+
+Display-name force takes effect on the **next** OIDC login. See [CLIENT-CONTRACT.md](CLIENT-CONTRACT.md).
+
+Backfill rooms that are joinable but missing from Browse (must be guild-bot):
+
+```bash
+TOKEN=$(cat config/secrets/guild-bot.compatibility-token)
+ROOM='!yourRoomId'
+curl -sS -X PUT "http://127.0.0.1:8008/_matrix/client/v3/directory/list/room/${ROOM}" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"visibility":"public"}'
+```
+
+## 9. Rollback
 
 | Change | Rollback |
 |---|---|
@@ -151,19 +201,22 @@ Hybrid model: run ensure after first Matrix login (ops script or future webapp h
 
 ## Checklist
 
-- [ ] `homeserver.yaml` has `enable_room_list_search: true`, `msc4108_enabled: true`, and `room_list_publication_rules` allowing `@guild-bot`
+- [ ] `homeserver.yaml` has `enable_room_list_search: true`, `msc4108_enabled: true`, `room_list_publication_rules` allowing `@guild-bot`, `allow_public_rooms_over_federation: true`, `presence.enabled: true`, `enable_search: true`, encryption `"off"`
+- [ ] MAS `displayname.action: force`
 - [ ] `/_matrix/client/versions` → `org.matrix.msc4108: true`
 - [ ] `@guild-bot` exists; token file present and mode `600`
 - [ ] `POST /publicRooms` returns expected public rooms
 - [ ] `auth.` → MAS; `matrix.` → Synapse (rendezvous not stolen)
-- [ ] Element Explore lists public rooms
+- [ ] Element Explore / Comms Browse lists public rooms
 - [ ] QR device-link smoke test OK (or fallback documented for this guild)
 - [ ] At least one `#fleet-9-N` ensured and joinable
+- [ ] [CLIENT-CONTRACT.md](CLIENT-CONTRACT.md) handed to Comms / Element operators
 
 ## Related docs
 
 - [SETUP.md](SETUP.md) — greenfield
 - [USAGE.md](USAGE.md) — admin, guild-bot, room conventions
+- [CLIENT-CONTRACT.md](CLIENT-CONTRACT.md) — Comms / every-guild contract
 - [STRUCTS-WEBAPP-HANDOFF.md](STRUCTS-WEBAPP-HANDOFF.md) — OIDC token/key fixes + optional fleet ensure hook
 - [CREW-REFERENCE.md](CREW-REFERENCE.md) — crew diary
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — federation signature / proxy URI decoding
