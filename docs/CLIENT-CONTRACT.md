@@ -122,6 +122,9 @@ not protect against remote impersonation.
 
 1. Keep localpart = player id; keep OIDC wallet login.
 2. Prefer directory + federated `publicRooms`; keep alias probe as fallback.
+   Missing fleet/planet room: call the owner guild's
+   `POST /api/chat/room/ensure` ([GUILD-CHAT-STANDARD.md](GUILD-CHAT-STANDARD.md)),
+   then join. Never create it as the player (403).
 3. Create game DMs **without** encryption; never treat Element-encrypted DMs as
    readable.
 4. Send `m.mentions`. Hide pin/redact/topic for PL 0.

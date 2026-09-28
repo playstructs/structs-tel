@@ -88,6 +88,11 @@ decrypt” in Comms, so the conversation silently splits.
 
 Limits, stated plainly:
 
+- DMs are not private from server operators. Messages are stored readable in
+  the Synapse database of every homeserver in the room. Don't tell players
+  otherwise. This is deliberate: every player must be able to read chat in
+  Comms, and that outweighs private DMs.
+
 - Rooms already encrypted stay encrypted. Matrix has no way to turn it off.
 - Clients that ignore the well-known hint (some mobile clients, Element X
   among them) will get a 403 when they try to create an encrypted DM, rather
@@ -128,10 +133,49 @@ only room managers may set `join_rule: public`. Players can still create DMs and
 private rooms.
 
 **Client consequence.** A client that creates a fleet or planet room as the
-player (Comms did, for `#planet-*`) now gets 403. The room must come from the
-guild side: `ensure-published-room.py` / `ensure-fleet-room.py`, or a webapp
-hook that calls them. Clients should resolve the alias, then join. They should
-not fall back to creating the room.
+player (Comms did, for `#planet-*`) now gets 403. Fleet and planet rooms come
+from the owner guild's API instead.
+
+### Room ensure endpoint (every guild webapp)
+
+`POST {guild_api}/api/chat/room/ensure`, where `guild_api` comes from the owner
+guild's `guild.json`.
+
+```json
+{ "kind": "planet", "id": "2-22432" }
+```
+
+Authentication, either:
+
+- a webapp session on this guild (its own players), or
+- a chain-key signature (players of any guild): add `address`, `pubkey`,
+  `signature`, `unix_timestamp` to the body, signing
+  `CHATROOM{kind}{id}ADDRESS{address}DATETIME{unix_timestamp}`. Valid for 10 minutes;
+  the address must be an approved player address on chain.
+
+| Status | Meaning |
+|---|---|
+| 201 / 200 | `data: {room_id, alias, server_name, created}`. Created now, or already existed. |
+| 409 `owner_in_other_guild` | `data: {owner_guild_id, owner_guild_endpoint}`. Ask that guild. |
+| 404 `object_not_found` | No such fleet/planet on chain |
+| 400 `invalid_object` | `kind` must be `fleet` (`9-N`) or `planet` (`2-N`) |
+| 401 | No session and no valid signature |
+| 503 `chat_not_configured` / 502 `homeserver_error` | Guild side problem |
+
+The API creates the room as `@guild-bot` (public, published, alias
+`#{kind}-{id}`), invites the chain owner and gives them power 100. Every call
+also re-syncs owner power with the chain: when a planet changes hands, the new
+owner gets 100 and the old owner loses it. Rooms can only exist for this
+guild's objects, which bounds how many any caller can make.
+
+Client flow: resolve `#{kind}-{id}:{owner server}` → join. On 404, call the
+owner guild's ensure endpoint, then join the returned `room_id`. Never create
+the room yourself.
+
+Webapp env (restored from structs-tel by `apply-oidc-from-tel.sh` after each
+pull): `MATRIX_SERVER_NAME`, `SYNAPSE_CLIENT_URL` (default
+`http://structs-matrix:8008`), `GUILD_BOT_TOKEN` (guild-bot compatibility
+token; not an admin token).
 
 ## 5. Impersonation: fixed in the identity provider
 
