@@ -56,7 +56,9 @@ services:
     restart: unless-stopped
     environment:
       SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
+      PYTHONPATH: /modules
     volumes:
+      - ./modules:/modules:ro
       - ./config/synapse/homeserver.yaml:/data/homeserver.yaml:ro
       - ./config/synapse/log.config:/data/log.config:ro
       - ./config/secrets/signing.key:/data/signing.key:ro

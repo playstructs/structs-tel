@@ -190,7 +190,45 @@ curl -sS -X PUT "http://127.0.0.1:8008/_matrix/client/v3/directory/list/room/${R
   -d '{"visibility":"public"}'
 ```
 
-## 9. Rollback
+## 9. Guild chat standard — E2EE off, room policy, display-name lock (2026-09-28)
+
+Policy and rationale: [GUILD-CHAT-STANDARD.md](GUILD-CHAT-STANDARD.md). Files:
+
+| File | Change |
+|---|---|
+| `modules/structs_chat_policy.py` | New. Refuses local `m.room.encryption`; only `@guild-bot` may set `join_rule: public` |
+| `compose.yaml` | Synapse mounts `./modules:/modules:ro`, `PYTHONPATH=/modules` |
+| `homeserver.yaml.template` | `alias_creation_rules` (guild-bot only), `extra_well_known_client_content.io.element.e2ee`, `enable_set_displayname: false`, `allow_per_room_profiles: false`, `modules:`, `retention` |
+| `mas/config.yaml.template` | `displayname` template reads `user.name` first |
+| Caddy | Static `/.well-known/matrix/client` JSON gains `"io.element.e2ee":{"default":false,"force_disable":true}` |
+
+```bash
+cd ~/structs-tel
+cp -a config/mas/config.yaml config/mas/config.yaml.bak.$(date +%s)
+./scripts/render-configs.sh
+docker compose up -d synapse            # compose change → recreate
+docker compose up -d --force-recreate mas
+docker logs --since 1m structs-matrix-synapse-1 2>&1 | grep 'Loaded module'
+# edit Caddy well-known (if Caddy answers it statically), then:
+systemctl restart caddy
+curl -sS https://matrix.<guild>/.well-known/matrix/client | jq '."io.element.e2ee"'
+# expect {"default":false,"force_disable":true}
+```
+
+Verify as a **non-bot** local user (not guild-bot):
+
+| Call | Expect |
+|---|---|
+| `createRoom` with `m.room.encryption` in `initial_state` | 403 `This event is not allowed in this context` |
+| `createRoom` `preset: public_chat` | 403 |
+| `createRoom` with `room_alias_name` | 403 `Not allowed to create alias` |
+| `createRoom` `preset: private_chat` | 200 |
+| `PUT /profile/{me}/displayname` | 400 `Changing display name is disabled on this server` |
+| `GET /capabilities` | `m.set_displayname.enabled: false` |
+
+Existing encrypted rooms stay encrypted (Matrix cannot turn it off). Existing player-created public rooms are not touched; recreate them as guild-bot if they matter.
+
+## 10. Rollback
 
 | Change | Rollback |
 |---|---|
@@ -198,6 +236,7 @@ curl -sS -X PUT "http://127.0.0.1:8008/_matrix/client/v3/directory/list/room/${R
 | Fleet / guild rooms | Leave in place (safe). Delete via Admin API only if intentional |
 | Guild-bot account | Leave; demote/lock only if compromised — rotate compatibility token |
 | Caddy | Restore previous Caddyfile backup; `systemctl restart caddy` |
+| Chat policy module | Delete the `modules:` block from template, re-render, recreate Synapse |
 
 ## Checklist
 

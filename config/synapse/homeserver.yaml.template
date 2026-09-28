@@ -72,10 +72,35 @@ allow_public_rooms_over_federation: true
 # Message search (POST /search). Distinct from enable_room_list_search.
 enable_search: true
 
-# Game clients (Comms) have no E2EE. Do not default-encrypt rooms Synapse creates.
-# Quote "off" so YAML does not parse it as boolean false. Element may still encrypt
-# DMs it creates itself — see docs/CLIENT-CONTRACT.md.
+# Aliases (#name:server) are guild-bot only; see docs/CLIENT-CONTRACT.md naming table.
+# Synapse default allows anyone to mint any alias.
+alias_creation_rules:
+  - user_id: "@guild-bot:${MATRIX_SERVER_NAME}"
+    alias: "*"
+    room_id: "*"
+    action: allow
+  - action: deny
+
+# E2EE is off guild-wide (Comms has no E2EE). Three layers:
+#  - Synapse never default-encrypts. Quote "off" so YAML does not parse it as false.
+#  - Element reads io.element.e2ee from /.well-known/matrix/client and hides encryption.
+#  - modules/structs_chat_policy.py refuses m.room.encryption from local users.
 encryption_enabled_by_default_for_room_type: "off"
+extra_well_known_client_content:
+  io.element.e2ee:
+    default: false
+    force_disable: true
+
+# Display name comes from the identity provider (webapp preferred_username) via MAS
+# on every login. Users cannot override it globally or per room.
+enable_set_displayname: false
+allow_per_room_profiles: false
+
+modules:
+  - module: structs_chat_policy.StructsChatPolicy
+    config:
+      room_managers:
+        - "@guild-bot:${MATRIX_SERVER_NAME}"
 
 # Who is around (roster / “online now”). Default is already true; set explicitly
 # so copied “disable presence to save CPU” configs cannot turn it off by accident.
@@ -94,3 +119,13 @@ experimental_features:
 
 caches:
   global_factor: 0.5
+
+# Per-room message retention (MSC1763). Purges only rooms with m.room.retention;
+# no default_policy so other channels are unaffected.
+retention:
+  enabled: true
+  purge_jobs:
+    - longest_max_lifetime: 3d
+      interval: 1h
+    - shortest_max_lifetime: 3d
+      interval: 1d

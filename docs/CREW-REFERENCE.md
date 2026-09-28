@@ -108,6 +108,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://auth.crew.oh.energy/
 | 2026-08-29 features | Room directory + MSC4108 off by default in older Synapse configs | Template: `enable_room_list_search: true`, `experimental_features.msc4108_enabled: true`; re-render + recreate Synapse. Replicate: [UPGRADE.md](UPGRADE.md) |
 | 2026-08-29 features | `Not allowed to publish room` despite guild-bot creator | Synapse defaults empty `room_list_publication_rules` → deny all. Allow `@guild-bot` only in template |
 | 2026-08-30 beta | MAS callback 500; `/oauth/token` `invalid_client` | `OIDC_MAS_CLIENT_SECRET` from `openssl rand -base64 32` (leading `+`). MAS RFC-encodes Basic; webapp does not urldecode. Rotate to hex, re-seed, recreate MAS. Generator now emits hex. |
+| 2026-08-31 Comms | Federated Browse `M_FORBIDDEN`; display names still `suggest` | Re-render + recreate synapse+mas: `allow_public_rooms_over_federation`, presence, encryption `"off"`, search, `rc_message` 1.0/30, MAS `displayname.action: force`. Crew↔beta `publicRooms?server=` now 200. |
 
 ## Final working shape
 
@@ -121,7 +122,8 @@ Element login: pending manual smoke test
 Matrix MXID example: pending
 Notes: structs-pg TLS cert must stay X.509 v3 for MAS; Caddy admin off → restart not reload
 Public room: #orbital-hydro:matrix.crew.oh.energy (Orbital Hydro), created by @guild-bot:matrix.crew.oh.energy
-Directory + MSC4108: enable_room_list_search + msc4108_enabled + room_list_publication_rules (guild-bot allow)
+Directory + MSC4108: enable_room_list_search + msc4108_enabled + room_list_publication_rules (guild-bot allow) + allow_public_rooms_over_federation
 Fleet rooms: ensure via scripts/ensure-fleet-room.py (guild-bot); example #fleet-9-3076:matrix.crew.oh.energy
-publicRooms: Orbital Hydro + Fleet 9-3076 listed
+publicRooms: Orbital Hydro + Fleet 9-3076 listed; federated listing from beta works
+Comms: presence on, encryption default off, enable_search, rc_message 1.0/30, MAS displayname force
 ```

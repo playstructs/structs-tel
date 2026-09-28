@@ -2,6 +2,7 @@
 
 From native Matrix in Structs.app (Comms) plus Element. Protect the two
 identity rules; implement the rest on **every** guild homeserver.
+Operator-facing summary for other guild teams: [GUILD-CHAT-STANDARD.md](GUILD-CHAT-STANDARD.md).
 
 ## Do not trade these away
 
@@ -20,9 +21,9 @@ recreate Synapse + MAS per [UPGRADE.md](UPGRADE.md).
 | 1a | Publish rooms | `visibility: "public"` at create + `room_list_publication_rules` allow `@guild-bot` only | `join_rule: public` does **not** list a room. Browse stays empty. |
 | 1b | Federated directory | `allow_public_rooms_over_federation: true` | Otherwise `GET /publicRooms?server=<other>` is `M_FORBIDDEN`. |
 | 2 | Presence | `presence.enabled: true` (explicit) | Roster / “who is around”. Do not copy “disable presence to save CPU”. |
-| 3 | Default encryption | `encryption_enabled_by_default_for_room_type: "off"` (quoted) | Comms has no E2EE. Encrypted DMs are unreadable there, asymmetrically. |
-| 4 | Aliases + power | Documented below; rooms created by `@guild-bot` | v12 creator is infinite and permanent. Alias lives on the **owner** homeserver. |
-| 5 | Display name | MAS `displayname.action: force` from `preferred_username` | Stops local spoofing. Remote federated users can still lie; clients should keep folding. |
+| 3 | Encryption off | `encryption_enabled_by_default_for_room_type: "off"`, well-known `io.element.e2ee.force_disable`, `structs_chat_policy` refuses local `m.room.encryption` | Comms has no E2EE. Encrypted DMs are unreadable there, asymmetrically. |
+| 4 | Aliases + power | `alias_creation_rules` guild-bot only; `structs_chat_policy` lets only guild-bot set `join_rule: public` | v12 creator is infinite and permanent. Alias lives on the **owner** homeserver. |
+| 5 | Display name | Webapp `name` claim (disambiguated) → MAS `action: force`; `enable_set_displayname: false`, `allow_per_room_profiles: false` | Stops local spoofing. Remote federated users can still lie; clients should keep folding. |
 | 6a | Message search | `enable_search: true` | `POST /search` `order_by: recent`. |
 | 6b | Raid bursts | `rc_message: 1.0/s burst 30` | Default 0.2/s burst 10 will 429 a fight. |
 
@@ -30,22 +31,25 @@ Leave `allow_public_rooms_without_auth` **false** (directory still requires a Ma
 
 ## Decision: encryption
 
-**Guild-adjacent rooms and DMs are unencrypted by policy.**
+**E2EE is off on every guild homeserver** (decided 2026-09-28; supersedes the
+earlier “unencrypted by default, encryption allowed” stance).
 
 Comms cannot implement Megolm + cross-signing + key backup in the game client
-on a useful timeline. Element encrypts DMs **it** creates even when Synapse
-default is off. So:
+on a useful timeline, and one encrypted DM splits a conversation between
+clients. So the server refuses it for its own users:
 
-- `@guild-bot` must never send `m.room.encryption`.
-- Comms should create (or reuse) **unencrypted** DMs for player-to-player game
-  chat.
-- Element users talking to Comms users must use an unencrypted room, or the
-  Comms side will show “encrypted message — this app cannot read it” while
-  Element looks fine.
+- Synapse never default-encrypts.
+- `/.well-known/matrix/client` carries
+  `"io.element.e2ee": {"default": false, "force_disable": true}`; Element Web /
+  Desktop hide encryption and create plain DMs.
+- `modules/structs_chat_policy.py` refuses `m.room.encryption` from local users
+  (including `createRoom` `initial_state`). A client that ignores the
+  well-known gets 403 instead of a silently unreadable room.
+- Remote users’ events are never rejected. A room owned by another homeserver
+  can still turn encryption on; Comms should show that plainly.
+- Rooms already encrypted stay encrypted; Matrix has no off switch.
 
-Do not “fix” this by teaching Comms E2EE unless product explicitly takes that
-on. Do not reject `m.room.encryption` server-wide — that would break people who
-want private Element-only rooms.
+Do not “fix” this by teaching Comms E2EE unless product explicitly takes that on.
 
 ## Alias convention (discovery until every room is published)
 
@@ -89,9 +93,12 @@ text is both over- and under-inclusive. This is **not** a Synapse flag.
 
 ## Display names
 
-MAS forces `preferred_username` (webapp `player.username`, the name the chain
-already settled) on every login. Local Element profile edits will not stick
-after the next OIDC login.
+The identity provider (webapp) decides the display name; nothing downstream
+may change it. The `name` claim is `player.username`, or
+`username (player-id)` when another player holds the same name
+case-insensitively or the name mixes Latin with another script.
+`preferred_username` stays the raw on-chain name. MAS forces `name` on every
+login; Synapse refuses user-side display-name changes, global or per room.
 
 Federation: a user on another homeserver can still set any display name.
 Clients should keep stripping bidi/zero-width, folding confusables, and
@@ -129,8 +136,8 @@ not protect against remote impersonation.
 **structs-webapp**
 
 1. Keep `sub` = `player.id`.
-2. Keep `preferred_username` / `name` = `player.username` (on-chain name).
-   Empty username falls back to `sub` in MAS.
+2. Keep `preferred_username` = `player.username` (on-chain name) and `name` =
+   the disambiguated display name above. Empty username falls back to `sub`.
 3. Do not let players mint guild/fleet/planet rooms from the SPA (v12 creator).
 
 ## Verify

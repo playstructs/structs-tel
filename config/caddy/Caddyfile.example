@@ -23,7 +23,7 @@ http://matrix.crew.oh.energy {
 	handle /.well-known/matrix/client {
 		header Access-Control-Allow-Origin *
 		header Content-Type application/json
-		respond `{"m.homeserver":{"base_url":"https://matrix.crew.oh.energy"},"org.matrix.msc2965.authentication":{"issuer":"https://auth.crew.oh.energy/","account":"https://auth.crew.oh.energy/account"}}`
+		respond `{"m.homeserver":{"base_url":"https://matrix.crew.oh.energy"},"org.matrix.msc2965.authentication":{"issuer":"https://auth.crew.oh.energy/","account":"https://auth.crew.oh.energy/account"},"io.element.e2ee":{"default":false,"force_disable":true}}`
 	}
 	handle /.well-known/matrix/server {
 		header Access-Control-Allow-Origin *
@@ -41,7 +41,7 @@ https://matrix.crew.oh.energy {
 	handle /.well-known/matrix/client {
 		header Access-Control-Allow-Origin *
 		header Content-Type application/json
-		respond `{"m.homeserver":{"base_url":"https://matrix.crew.oh.energy"},"org.matrix.msc2965.authentication":{"issuer":"https://auth.crew.oh.energy/","account":"https://auth.crew.oh.energy/account"}}`
+		respond `{"m.homeserver":{"base_url":"https://matrix.crew.oh.energy"},"org.matrix.msc2965.authentication":{"issuer":"https://auth.crew.oh.energy/","account":"https://auth.crew.oh.energy/account"},"io.element.e2ee":{"default":false,"force_disable":true}}`
 	}
 	handle /.well-known/matrix/server {
 		header Access-Control-Allow-Origin *
