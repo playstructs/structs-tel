@@ -127,6 +127,12 @@ plus `structs_chat_policy` (`room_managers: ["@guild-bot:<server_name>"]`):
 only room managers may set `join_rule: public`. Players can still create DMs and
 private rooms.
 
+**Client consequence.** A client that creates a fleet or planet room as the
+player (Comms did, for `#planet-*`) now gets 403. The room must come from the
+guild side: `ensure-published-room.py` / `ensure-fleet-room.py`, or a webapp
+hook that calls them. Clients should resolve the alias, then join. They should
+not fall back to creating the room.
+
 ## 5. Impersonation: fixed in the identity provider
 
 **Problem.** On-chain usernames are not unique. On 2026-09-28 four names were shared
@@ -173,6 +179,22 @@ Clients should still append the MXID localpart when two members share a name.
 | `rc_message: 1.0/s, burst 30` | Default 0.2/s burst 10 rate-limits raid chat |
 | `retention.enabled` (no default policy) | Rooms that set `m.room.retention` get purged; others untouched |
 | `experimental_features.msc4108_enabled` | Element QR sign-in |
+
+## What the reference servers looked like, and what changed (2026-09-28)
+
+| Finding | Orbital Hydro | SN Corp | Action |
+|---|---|---|---|
+| Public rooms missing from Browse | `#planet-2-22432`, `#planet-2-21411` (player-created, so un-publishable) | none | Recreated as guild-bot rooms (owner `@1-194` PL 100), aliases moved, members invited, old rooms left with a “moved” notice |
+| Duplicate lobby | — | `#sn-corp` (11 members) and `#sncorp` (guild-bot, 3 members) | `#sncorp` now resolves to `#sn-corp`; old room unlisted and tombstoned |
+| Presence | on | on | explicit in template (no change needed) |
+| Encryption | 1 player DM encrypted; Element not told to stop | none | three-layer E2EE-off applied |
+| Players could mint aliases / public rooms | yes | yes | `alias_creation_rules` + policy module |
+| Players could rename in chat | yes (between logins, per room) | yes | display-name lock |
+| Shared usernames | 4 names, 24 players (chain-wide) | same | webapp `name` claim disambiguates; MAS reads it |
+
+Verified on SN Corp as a non-bot user: encrypted/public/aliased `createRoom` → 403,
+private → 200, display-name change → 400, per-room override stripped, local and
+federated `publicRooms` (crew, crab.la) list rooms, presence round-trips.
 
 ## Checklist
 
